@@ -28,12 +28,23 @@ The **Healthcare Chatbot** is a Python-based conversational assistant designed t
 ## 🛠️ Tech Stack
 - **Language**: Python  
 - **Libraries**:  
-  - `NLTK` / `spaCy` → natural language processing  
+  - `Pandas` / `scikit-learn` for symptom and health prediction workflows
   - `Flask` for the web application
 
 ## Deploying on Render
 
-The repository root contains a `render.yaml` Blueprint that sets the service root
-to `Health-Care-Chatbot`, installs `requirements.txt`, and starts the app with
-Gunicorn. Create or update a Render Blueprint from this repository to apply the
-configuration. Render generates a `SECRET_KEY` for session security.
+The repository root contains `render.yaml`, `.python-version`, and a root
+`requirements.txt` that delegates to this folder's dependency list. The Render
+start command changes into this folder and serves `app:app` with Gunicorn.
+
+Create or update a Render Blueprint from this repository to apply these
+settings. Render generates `SECRET_KEY`. For persistent user data, configure
+`DATABASE_URL` with a PostgreSQL connection string; SQLite on Render's
+ephemeral filesystem is not durable across restarts or redeploys. Set
+`UPLOAD_FOLDER` to a mounted persistent disk path if uploaded prescriptions
+must survive redeploys.
+
+Optional integrations use `GOOGLE_MAPS_API_KEY` and the SMTP settings
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL`, and
+`SMTP_USE_TLS`. The current `gemini_client.py` is a mock/fallback stub, not a
+live Gemini API integration.

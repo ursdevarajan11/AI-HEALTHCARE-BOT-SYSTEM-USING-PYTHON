@@ -31,14 +31,25 @@ from gemini_client import generate_response
 
 # Create Flask app and initialize extensions before any routes
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key_here_change_in_production')
+app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(32)
+app.config['UPLOAD_FOLDER'] = os.path.abspath(
+    os.environ.get('UPLOAD_FOLDER', os.path.join('instance', 'uploads'))
+)
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Prefer using a DB in `instance/` but fall back to a writable temp directory if OneDrive or permissions block file creation.
 instance_db = os.path.join('instance', 'healthcare_app.db')
 # Allow forcing use of a temp DB via env var for recovery/testing
 force_temp = os.environ.get('FORCE_TEMP_DB', '0') == '1'
 temp_path_env = os.environ.get('TEMP_DB_PATH')
+database_url = os.environ.get('DATABASE_URL')
+if database_url and database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql+psycopg://', 1)
+elif database_url and database_url.startswith('postgresql://'):
+    database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
 
-if force_temp:
+if database_url:
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+elif force_temp:
     import tempfile
     if temp_path_env:
         temp_db = os.path.abspath(temp_path_env)
@@ -135,6 +146,12 @@ def check_database_available():
             return jsonify({'error': 'Database unavailable', 'details': str(e)}), 503
         # Otherwise render an explanatory template
         return render_template('error_db.html', message=str(e)), 503
+
+
+@app.get('/health')
+def health():
+    return jsonify({'status': 'ok'})
+
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -312,7 +329,7 @@ def allowed_file(filename):
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
     # Serve uploaded files from instance/uploads if present, else fall back to temp uploads
-    instance_upload = os.path.join('instance', 'uploads')
+    instance_upload = app.config['UPLOAD_FOLDER']
     if os.path.exists(os.path.join(instance_upload, filename)):
         return send_from_directory(instance_upload, filename)
     # Fallback to system temp uploads
@@ -691,7 +708,7 @@ def symptom_checker():
                         ts = datetime.utcnow().strftime('%Y%m%d%H%M%S')
                         uid = session.get('user_id', 'anon')
                         save_name = f"{uid}_{ts}_{filename}"
-                        upload_dir = os.path.join('instance', 'uploads')
+                        upload_dir = app.config['UPLOAD_FOLDER']
                         os.makedirs(upload_dir, exist_ok=True)
                         file_path = os.path.join(upload_dir, save_name)
                         file.save(file_path)
@@ -1850,10 +1867,10 @@ def upload_prescription():
     if not allowed_file(f.filename):
         return jsonify({'error': 'Unsupported file type'}), 400
     filename = secure_filename(f.filename)
-    os.makedirs(os.path.join('instance','uploads'), exist_ok=True)
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     ts = datetime.utcnow().strftime('%Y%m%d%H%M%S')
     save_name = f"pres_{session.get('user_id')}_{ts}_{filename}"
-    path = os.path.join('instance','uploads', save_name)
+    path = os.path.join(app.config['UPLOAD_FOLDER'], save_name)
     f.save(path)
     pu = PrescriptionUpload(user_id=session.get('user_id'), filename=save_name)
     db.session.add(pu)
@@ -1946,7 +1963,7 @@ def create_prescription():
         # Save image
         ts = datetime.utcnow().strftime('%Y%m%d%H%M%S')
         filename = f"genpres_{session.get('user_id')}_{ts}.png"
-        save_dir = os.path.join('instance','uploads')
+        save_dir = app.config['UPLOAD_FOLDER']
         os.makedirs(save_dir, exist_ok=True)
         save_path = os.path.join(save_dir, filename)
         try:
