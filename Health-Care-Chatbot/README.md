@@ -35,7 +35,9 @@ The **Healthcare Chatbot** is a Python-based conversational assistant designed t
 
 The repository root contains `render.yaml`, `.python-version`, and a root
 `requirements.txt` that delegates to this folder's dependency list. The Render
-start command changes into this folder and serves `app:app` with Gunicorn.
+configuration pins Python 3.11.9, which has prebuilt wheels for the project's
+scikit-learn 1.5.2, NumPy 1.26.4, and pandas 2.2.3 dependencies. The start
+command changes into this folder and serves `app:app` with Gunicorn.
 
 Create or update a Render Blueprint from this repository to apply these
 settings. Render generates `SECRET_KEY`. For persistent user data, configure

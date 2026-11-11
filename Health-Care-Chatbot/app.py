@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import HTTPException
 import json
 from datetime import datetime, timedelta
 import os
@@ -2385,6 +2386,9 @@ def analyze_image():
 
 @app.errorhandler(Exception)
 def handle_unexpected_error(e):
+    if isinstance(e, HTTPException):
+        return e
+
     tb = traceback.format_exc()
     logger.error(tb)
     # Return a generic 500 page (do not expose internals in production)
