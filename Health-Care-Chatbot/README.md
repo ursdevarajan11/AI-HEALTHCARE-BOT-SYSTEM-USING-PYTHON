@@ -29,4 +29,11 @@ The **Healthcare Chatbot** is a Python-based conversational assistant designed t
 - **Language**: Python  
 - **Libraries**:  
   - `NLTK` / `spaCy` → natural language processing  
-  - `Flask` /
+  - `Flask` for the web application
+
+## Deploying on Render
+
+The repository root contains a `render.yaml` Blueprint that sets the service root
+to `Health-Care-Chatbot`, installs `requirements.txt`, and starts the app with
+Gunicorn. Create or update a Render Blueprint from this repository to apply the
+configuration. Render generates a `SECRET_KEY` for session security.

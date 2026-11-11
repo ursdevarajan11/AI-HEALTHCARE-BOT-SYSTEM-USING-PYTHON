@@ -31,7 +31,7 @@ from gemini_client import generate_response
 
 # Create Flask app and initialize extensions before any routes
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here_change_in_production'
+app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key_here_change_in_production')
 # Prefer using a DB in `instance/` but fall back to a writable temp directory if OneDrive or permissions block file creation.
 instance_db = os.path.join('instance', 'healthcare_app.db')
 # Allow forcing use of a temp DB via env var for recovery/testing
